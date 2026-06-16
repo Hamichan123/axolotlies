@@ -272,7 +272,7 @@ const CONFIG = {
   SCRIPT_URL: "https://script.google.com/macros/s/AKfycbzxasgKLlvwcYHbp9IXw8QdxFVKs_NwoJVD78Uv3UZIik3PNzhXz0Br_HIZkMlb5L41/exec",
 
   // 2) The exact tweet/post users should like, retweet & comment on:
-  TWEET_URL: "https://x.com/Axolotlies_NFT",
+  TWEET_URL: "https://x.com/Axolotlies_NFT/status/2066559790982004969",
 
   // 3) Your X profile + handle:
   X_PROFILE: "https://x.com/Axolotlies_NFT",
@@ -283,6 +283,12 @@ const CONFIG = {
 document.getElementById('followBtn').href = CONFIG.X_PROFILE;
 document.getElementById('tweetBtn1').href = CONFIG.TWEET_URL;
 document.getElementById('tweetBtn2').href = CONFIG.TWEET_URL;
+
+/* require the task link to be opened before the step counts as done */
+const linkClicked = { follow:false, tweet1:false, tweet2:false };
+document.getElementById('followBtn').addEventListener('click', () => { linkClicked.follow = true; refresh(); });
+document.getElementById('tweetBtn1').addEventListener('click', () => { linkClicked.tweet1 = true; refresh(); });
+document.getElementById('tweetBtn2').addEventListener('click', () => { linkClicked.tweet2 = true; refresh(); });
 
 /* elements */
 const els = {
@@ -296,9 +302,9 @@ const pBar = document.getElementById('pBar'), pCount = document.getElementById('
 
 /* validators */
 const v = {
-  username: () => els.username.value.trim().replace(/^@+/,'').length >= 1,
-  liked:    () => els.liked.checked,
-  comment:  () => /^https?:\/\/.+\..+/i.test(els.comment.value.trim()),
+  username: () => linkClicked.follow && els.username.value.trim().replace(/^@+/,'').length >= 1,
+  liked:    () => linkClicked.tweet1 && els.liked.checked,
+  comment:  () => linkClicked.tweet2 && /^https?:\/\/.+\..+/i.test(els.comment.value.trim()),
   wallet:   () => /^0x[a-fA-F0-9]{40}$/.test(els.wallet.value.trim()),
 };
 
@@ -346,7 +352,13 @@ submitBtn.addEventListener('click', async () => {
   const allOk = v.username() && v.liked() && v.comment() && v.wallet();
   if(!allOk){
     let msg = "Almost there! Please finish every step before submitting.";
-    if(!v.liked()) msg = "Don't forget to tick the like & retweet box in step 2.";
+    if(!linkClicked.follow) msg = "Please open the @Axolotlies_NFT link in step 1 first.";
+    else if(!v.username()) msg = "Pop in your X username in step 1.";
+    else if(!linkClicked.tweet1) msg = "Please open the post link in step 2 first.";
+    else if(!v.liked()) msg = "Don't forget to tick the like & retweet box in step 2.";
+    else if(!linkClicked.tweet2) msg = "Please open the post link in step 3 first.";
+    else if(!v.comment()) msg = "Paste the link to your comment in step 3.";
+    else if(!v.wallet()) msg = "Add a valid EVM wallet address in step 4.";
     formError.textContent = msg;
     formError.style.display='block';
     // scroll to first incomplete task
